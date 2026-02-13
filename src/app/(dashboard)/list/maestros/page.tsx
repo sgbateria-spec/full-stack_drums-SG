@@ -3,21 +3,14 @@ import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { role, teachersData } from "@/lib/data";
+import prisma from "@/lib/prisma";
+import { ITEM_PER_PAGE } from "@/lib/settings";
+import { Clase, Maestro, Materia } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 
-type Maestro = {
-    id:number;
-    maestroId:string;
-    nombre:string;
-    email?:string;
-    foto:string;
-    telefono:string;
-    materias:string[];
-    clases:string[];
-    direccion:string;
-    
-};
+type MaestroList = Maestro & {materias:Materia[]} & {clases:Clase[]};
+
 
 const columns = [
     {
@@ -55,45 +48,71 @@ const columns = [
     },                
 ];
 
-const MaestroListPage = () => {
-    const renderRow = (item:Maestro) => (
-        <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
-            <td className="flex items-center gap-4 p-4">
-                <Image 
-                    src={item.foto} 
-                    alt="" 
-                    width={40} 
-                    height={40} 
-                    className="md:hidden xl:block w-10 h-10 rounded-full object-cover"
-                    />
-                    
-            
-            <div className="flex flex-col">
-                <h3 className="font-semibold">{item.nombre}</h3>
-                <p className="text-xs text-gray-500">{item?.email}</p>
+const renderRow = (item:MaestroList) => (
+    <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
+        <td className="flex items-center gap-4 p-4">
+            <Image 
+                src={item.img || "/noAvatar.png"} 
+                alt="" 
+                width={40} 
+                height={40} 
+                className="md:hidden xl:block w-10 h-10 rounded-full object-cover"
+                />
+                
+        
+        <div className="flex flex-col">
+            <h3 className="font-semibold">{item.nombre}</h3>
+            <p className="text-xs text-gray-500">{item?.email}</p>
+        </div>
+        </td>
+        <td className="hidden md:table-cell">{item.usuario}</td>
+        <td className="hidden md:table-cell">{item.materias.map((materia) => materia.nombre).join(",")}</td>
+        <td className="hidden md:table-cell">{item.clases.map((claseItem) => claseItem.nombre).join(",")}</td>
+        <td className="hidden md:table-cell">{item.telefono}</td>
+        <td className="hidden md:table-cell">{item.direccion}</td>
+        <td>
+            <div className="flex items-center gap-2">
+                <Link href={`/list/maestros/{item.id}`}>
+                    <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaSky ">
+                      <Image src="/edit.png" alt="" width={16} height={16}/>
+                    </button>
+                </Link>
+                    {role === "admin" && ( 
+                        <FormModal table="maestro" type="delete" id={item.id}/>
+                    )}
+                
             </div>
-            </td>
-            <td className="hidden md:table-cell">{item.maestroId}</td>
-            <td className="hidden md:table-cell">{item.materias.join(",")}</td>
-            <td className="hidden md:table-cell">{item.clases.join(",")}</td>
-            <td className="hidden md:table-cell">{item.telefono}</td>
-            <td className="hidden md:table-cell">{item.direccion}</td>
-            <td>
-                <div className="flex items-center gap-2">
-                    <Link href={`/list/maestros/{item.id}`}>
-                        <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaSky ">
-                          <Image src="/edit.png" alt="" width={16} height={16}/>
-                        </button>
-                    </Link>
-                        {role === "admin" && ( 
-                            <FormModal table="maestro" type="delete" id={item.id}/>
-                        )}
-                    
-                </div>
-            </td>
-        </tr>
+        </td>
+    </tr>
 
-    );
+);
+
+const MaestroListPage = async ({
+    searchParams,
+}:{
+    searchParams:{[key:string]:string | undefined};
+}) => {
+    
+    const { page, ...queryParams } = await searchParams;
+    
+    const p = page ? parseInt(page) : 1;
+    
+
+  
+
+    const [data, count] = await prisma.$transaction([
+        prisma.maestro.findMany({
+            include:{
+                materias:true,
+                clases:true,
+            },            
+            take: ITEM_PER_PAGE,         
+            skip: ITEM_PER_PAGE * (p - 1), 
+            }), 
+            prisma.maestro.count()
+    ])
+
+    console.log(count)
 
     return(
         <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
@@ -116,9 +135,9 @@ const MaestroListPage = () => {
                 </div>
             </div>
             {/* LIST */}
-            <Table columns={columns} renderRow={renderRow} data={teachersData}/>
+            <Table columns={columns} renderRow={renderRow} data={data}/>
             {/* PAGINATION */}
-            <Pagination/>
+            <Pagination page={p} count={count}/>
         </div>
     );
 };
