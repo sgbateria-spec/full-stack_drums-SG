@@ -3,21 +3,13 @@ import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { role, studentsData} from "@/lib/data";
+import prisma from "@/lib/prisma";
+import { ITEM_PER_PAGE } from "@/lib/settings";
+import { Alumno, Clase, Prisma } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 
-type Alumno = {
-    id:number;
-    alumnoId:string;
-    nombre:string;
-    email?:string;
-    foto:string;
-    telefono?:string;
-    grado:number;
-    clase:string;
-    direccion:string;
-    
-};
+type AlumnoList = Alumno & {clase:Clase}
 
 const columns = [
     {
@@ -50,12 +42,12 @@ const columns = [
     },                
 ];
 
-const AlumnoListPage = () => {
-    const renderRow = (item:Alumno) => (
+
+    const renderRow = (item:AlumnoList) => (
         <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
             <td className="flex items-center gap-4 p-4">
                 <Image 
-                    src={item.foto} 
+                    src={item.img || "/noAvatar.png"} 
                     alt="" 
                     width={40} 
                     height={40} 
@@ -65,11 +57,11 @@ const AlumnoListPage = () => {
             
             <div className="flex flex-col">
                 <h3 className="font-semibold">{item.nombre}</h3>
-                <p className="text-xs text-gray-500">{item.clase}</p>
+                <p className="text-xs text-gray-500">{item.clase.nombre}</p>
             </div>
             </td>
-            <td className="hidden md:table-cell">{item.alumnoId}</td>
-            <td className="hidden md:table-cell">{item.grado}</td>
+            <td className="hidden md:table-cell">{item.usuario}</td>
+            <td className="hidden md:table-cell">{item.clase.nombre[0]}</td>
             <td className="hidden md:table-cell">{item.telefono}</td>
             <td className="hidden md:table-cell">{item.direccion}</td>
             <td>
@@ -88,6 +80,57 @@ const AlumnoListPage = () => {
         </tr>
 
     );
+
+    const AlumnoListPage = async ({
+        searchParams,
+    }: {
+        searchParams: { [key: string]: string | undefined };
+    }) => {
+    
+        const { page, ...queryParams } = await searchParams;
+    
+        const p = page ? parseInt(page) : 1;
+    
+        //URL PARAMS CONDITION
+        const query: Prisma.AlumnoWhereInput = {};
+    
+        if (queryParams) {
+            for (const [key, value] of Object.entries(queryParams)) {
+                if (value !== undefined) {
+                    switch (key) {
+                        case "maestroId":
+                            query.clase = {
+                                lecciones:{
+                                    some: {
+                                        maestroId: value,
+                                    },
+                                },                               
+                            };
+                            break;
+                            case "search":
+                                query.nombre = {contains:value, mode:"insensitive"}    
+    
+    
+                    }
+                }
+    
+            }
+        }
+    
+    
+    
+        const [data, count] = await prisma.$transaction([
+            prisma.alumno.findMany({
+                where: query,
+                include: {
+                    clase: true,
+                },
+                take: ITEM_PER_PAGE,
+                skip: ITEM_PER_PAGE * (p - 1),
+            }),
+            prisma.alumno.count({where:query}),
+        ]);
+
 
     return(
         <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
@@ -110,9 +153,9 @@ const AlumnoListPage = () => {
                 </div>
             </div>
             {/* LIST */}
-            <Table columns={columns} renderRow={renderRow} data={studentsData}/>
+            <Table columns={columns} renderRow={renderRow} data={data}/>
             {/* PAGINATION */}
-            <Pagination/>
+            <Pagination page={p} count={count}/>
         </div>
     );
 };
