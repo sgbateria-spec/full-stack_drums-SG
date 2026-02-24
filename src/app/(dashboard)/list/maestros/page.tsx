@@ -112,7 +112,10 @@ const MaestroListPage = async ({
                         };
                         break;
                         case "search":
-                            query.nombre = {contains:value, mode:"insensitive"}    
+                            query.nombre = {contains:value, mode:"insensitive"}  
+                        break;
+                        default:
+                        break;  
 
 
                 }

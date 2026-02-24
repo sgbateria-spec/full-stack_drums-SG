@@ -109,7 +109,9 @@ const columns = [
                             break;
                             case "search":
                                 query.nombre = {contains:value, mode:"insensitive"}    
-    
+                                break;
+                                default:
+                                break;
     
                     }
                 }
