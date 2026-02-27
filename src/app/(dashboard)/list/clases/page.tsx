@@ -3,18 +3,16 @@ import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { classesData, role} from "@/lib/data";
+import prisma from "@/lib/prisma";
+import { ITEM_PER_PAGE } from "@/lib/settings";
+import { Clase, Maestro, Prisma } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 
-type Clase = {
-    id:number;
-    nombre:string;
-    capacidad:number;
-    grado:number;
-    supervisor:string;
+type ClaseList = Clase & {supervisor:Maestro[]};
     
     
-};
+
 
 const columns = [
     {
@@ -31,11 +29,11 @@ const columns = [
         accessor:"grado", 
         className:"hidden md:table-cell",
     },
-    {
-        header:"Supervisor", 
-        accessor:"supervisor", 
-        className:"hidden md:table-cell",
-    },
+    // {
+    //     header:"Supervisor", 
+    //     accessor:"supervisor", 
+    //     className:"hidden md:table-cell",
+    // },
    
     {
         header:"Acciones", 
@@ -43,33 +41,72 @@ const columns = [
     },                
 ];
 
-const ClaseListPage = () => {
-    const renderRow = (item:Clase) => (
-        <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
-            <td className="flex items-center gap-4 p-4">{item.nombre}</td>
-            <td className="hidden md:table-cell">{item.capacidad}</td>
-            <td className="hidden md:table-cell">{item.grado}</td>
-            <td className="hidden md:table-cell">{item.supervisor}</td>
-            <td>
-                <div className="flex items-center gap-2">
-                    <Link href={`/list/alumnos/{item.id}`}>
-                        <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaSky ">
-                            <Image src="/edit.png" alt="" width={16} height={16}/>
-                        </button>
-                    </Link>
-                        {role === "admin" && ( 
-                            <>
-                            <FormModal table="clase" type="update" data={item} />
-                            <FormModal table="clase" type="delete" id={item.id} />
-                            </>
+const renderRow = (item:ClaseList) => (
+    <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
+        <td className="flex items-center gap-4 p-4">{item.nombre}</td>
+        <td className="hidden md:table-cell">{item.capacidad}</td>
+        <td className="hidden md:table-cell">{item.nombre[0]}</td>
+      {/* <td className="hidden md:table-cell">{item.supervisor.name + " " + item.supervisor.usuario}</td> */}
+        <td>
+            <div className="flex items-center gap-2">
+                <Link href={`/list/alumnos/{item.id}`}>
+                    <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaSky ">
+                        <Image src="/edit.png" alt="" width={16} height={16}/>
+                    </button>
+                </Link>
+                    {role === "admin" && ( 
+                        <>
+                        <FormModal table="clase" type="update" data={item} />
+                        <FormModal table="clase" type="delete" id={item.id} />
+                        </>
 
-                        )}
-                    
-                </div>
-            </td>
-        </tr>
+                    )}
+                
+            </div>
+        </td>
+    </tr>
 
-    );
+);
+const ClaseListPage = async ({
+    searchParams,
+}: {
+    searchParams: { [key: string]: string | undefined };
+}) => {
+
+    const { page, ...queryParams } = await searchParams;
+
+    const p = page ? parseInt(page) : 1;
+
+    //URL PARAMS CONDITION
+    const query: Prisma.ClaseWhereInput = {};
+
+    if (queryParams) {
+        for (const [key, value] of Object.entries(queryParams)) {
+            if (value !== undefined) {
+                switch (key) {
+                        case "search":
+                            query.nombre = {contains:value, mode:"insensitive"}    
+                             break;
+                        
+                }
+            }
+
+        }
+    }
+       
+
+    const [data, count] = await prisma.$transaction([
+        prisma.clase.findMany({
+            where: query,
+            include: {
+                supervisor: true,
+            },
+            take: ITEM_PER_PAGE,
+            skip: ITEM_PER_PAGE * (p - 1),
+        }),
+        prisma.clase.count({where:query}),
+    ]);
+    
 
     return(
         <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
@@ -92,9 +129,9 @@ const ClaseListPage = () => {
                 </div>
             </div>
             {/* LIST */}
-            <Table columns={columns} renderRow={renderRow} data={classesData}/>
+            <Table columns={columns} renderRow={renderRow} data={data}/>
             {/* PAGINATION */}
-            <Pagination/>
+            <Pagination page={p} count={count}/>
         </div>
     );
 };
