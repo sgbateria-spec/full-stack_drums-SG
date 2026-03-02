@@ -97,7 +97,7 @@ const SingleAlumnoPage = () => {
                         <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
                             <Link className="p-3 rounded-md bg-lamaSkyLight" href="/">RoadMap</Link>
                             <Link className="p-3 rounded-md bg-lamaYellowLight" href="/">Canciones</Link>
-                            <Link className="p-3 rounded-md bg-pink-50" href="/">Lecciones</Link>
+                            <Link className="p-3 rounded-md bg-pink-50" href={`/list/lecciones?claseId=${2}`}>Lecciones</Link>
                             <Link className="p-3 rounded-md bg-lamaSkyLight" href="/">Videos</Link>
                         </div>
                     </h1>

@@ -115,7 +115,7 @@ const SingleMaestroPage = () => {
                         <div className="mt-4 flex gap-4 flex-wrap text-xs text-gray-500">
                             <Link className="p-3 rounded-md bg-lamaSkyLight" href={`/list/clases`}>Clases</Link>
                             <Link className="p-3 rounded-md bg-lamaPurpleLight" href={`/list/alumnos?maestroId=${"teacher2"}`}>Alumnos</Link>
-                            <Link className="p-3 rounded-md bg-lamaYellowLight" href="/list/lecciones">Lecciones</Link>
+                            <Link className="p-3 rounded-md bg-lamaYellowLight" href={`/list/lecciones?maestroId=${"teacher2"}`}>Lecciones</Link>
                             <Link className="p-3 rounded-md bg-pink-50" href="/">Canciones</Link>
                             <Link className="p-3 rounded-md bg-lamaSkyLight" href="/">Videos</Link>
                         </div>
