@@ -78,12 +78,13 @@ const LeccionListPage = async ({
         for (const [key, value] of Object.entries(queryParams)) {
             if (value !== undefined) {
                 switch (key) {
-                        case "maestroId":
-                            query.maestroId = value;   
-                            break;
-                            case "claseId":
+                    case "claseId":
                             query.claseId = parseInt(value);   
                             break;
+                            case "maestroId":
+                            query.maestroId = value;   
+                            break;
+                            
                          case "search":
                             query.OR = [
                                 {materia:{nombre: { contains:value, mode:"insensitive"}}},
