@@ -47,7 +47,7 @@ const renderRow = (item:ExamenList) => (
     <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
         <td className="flex items-center gap-4 p-4">{item.leccion.materia.nombre}</td>
         <td>{item.leccion.clase.nombre}</td>
-        <td className="hidden md:table-cell">{item.leccion.maestro.nombre + "" + item.leccion.maestro.apellido}</td>
+        <td className="hidden md:table-cell">{item.leccion.maestro.nombre + " " + item.leccion.maestro.apellido}</td>
         <td className="hidden md:table-cell">{new Intl.DateTimeFormat("en-US").format(item.startTime)}</td>
         <td>
             <div className="flex items-center gap-2">

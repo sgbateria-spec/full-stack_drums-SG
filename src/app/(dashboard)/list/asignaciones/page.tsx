@@ -3,17 +3,18 @@ import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { assignmentsData, examsData, role} from "@/lib/data";
+import prisma from "@/lib/prisma";
+import { ITEM_PER_PAGE } from "@/lib/settings";
+import { Asignacion, Clase, Maestro, Materia, Prisma } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 
-type Asignacion = {
-    id:number;
-    materia:string;
-    clase:string;
-    maestro:string;
-    dueFecha:string;
+type AsignacionList = Asignacion  & {leccion:{
+    materia:Materia,
+    clase:Clase,
+    maestro:Maestro,
 };
-
+};
 const columns = [
     {
         header:"Materia Nombre", 
@@ -40,33 +41,91 @@ const columns = [
     },                
 ];
 
-const AsignacionListPage = () => {
-    const renderRow = (item:Asignacion) => (
-        <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
-            <td className="flex items-center gap-4 p-4">{item.materia}</td>
-            <td>{item.clase}</td>
-            <td className="hidden md:table-cell">{item.maestro}</td>
-            <td className="hidden md:table-cell">{item.dueFecha}</td>
-            <td>
-                <div className="flex items-center gap-2">
-                    <Link href={`/list/alumnos/{item.id}`}>
-                        <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaSky ">
-                            <Image src="/edit.png" alt="" width={16} height={16}/>
-                        </button>
-                    </Link>
-                        {role === "admin" && ( 
-                            <>
-                            <FormModal table="asignacion" type="update" data={item} />
-                            <FormModal table="asignacion" type="delete" id={item.id} />
-                            </>
+const renderRow = (item:AsignacionList) => (
+    <tr key={item.id} className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-lamaPurpleLight">
+        <td className="flex items-center gap-4 p-4">{item.leccion.materia.nombre}</td>
+        <td>{item.leccion.clase.nombre}</td>
+        <td className="hidden md:table-cell">{item.leccion.maestro.nombre + " " + item.leccion.maestro.apellido}</td>
+        <td className="hidden md:table-cell">{new Intl.DateTimeFormat("en-US").format(item.dueDate)}</td>
+        <td>
+            <div className="flex items-center gap-2">
+                <Link href={`/list/alumnos/{item.id}`}>
+                    <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaSky ">
+                        <Image src="/edit.png" alt="" width={16} height={16}/>
+                    </button>
+                </Link>
+                    {role === "admin" && ( 
+                        <>
+                        <FormModal table="asignacion" type="update" data={item} />
+                        <FormModal table="asignacion" type="delete" id={item.id} />
+                        </>
 
-                        )}
-                    
-                </div>
-            </td>
-        </tr>
+                    )}
+                
+            </div>
+        </td>
+    </tr>
 
-    );
+);
+
+
+const AsignacionListPage = async ({
+    searchParams,
+}: {
+    searchParams: { [key: string]: string | undefined };
+}) => {
+
+    const { page, ...queryParams } = await searchParams;
+
+    const p = page ? parseInt(page) : 1;
+
+    //URL PARAMS CONDITION
+    const query: Prisma.AsignacionWhereInput = {};
+
+    if (queryParams) {
+        for (const [key, value] of Object.entries(queryParams)) {
+            if (value !== undefined) {
+                switch (key) {
+                    case "claseId":
+                            query.leccion = {claseId: parseInt(value)};   
+                            break;
+                            case "maestroId":
+                            query.leccion = {maestroId: value, };   
+                            break;
+                            
+                         case "search":
+                            query.leccion = {
+                                materia: {
+                                    nombre: {contains:value, mode:"insensitive"},
+                                },
+                            };
+                            break;                        
+                }
+            }
+
+        }
+    }
+       
+
+    const [data, count] = await prisma.$transaction([
+        prisma.asignacion.findMany({
+            where: query,
+            include: {
+                leccion: {
+                    select: {
+                        materia: {select: {nombre:true}},
+                        maestro: {select: {nombre:true, apellido: true}},
+                        clase: {select: {nombre:true}},
+                    },
+                },
+                
+            },
+            take: ITEM_PER_PAGE,
+            skip: ITEM_PER_PAGE * (p - 1),
+        }),
+        prisma.asignacion.count({where:query}),
+    ]);
+
 
     return(
         <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
@@ -89,9 +148,9 @@ const AsignacionListPage = () => {
                 </div>
             </div>
             {/* LIST */}
-            <Table columns={columns} renderRow={renderRow} data={assignmentsData}/>
+            <Table columns={columns} renderRow={renderRow} data={data}/>
             {/* PAGINATION */}
-            <Pagination/>
+            <Pagination page={p} count={count}/>
         </div>
     );
 };
