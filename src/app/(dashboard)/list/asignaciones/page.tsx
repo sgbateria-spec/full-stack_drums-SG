@@ -15,6 +15,7 @@ type AsignacionList = Asignacion  & {leccion:{
     maestro:Maestro,
 };
 };
+
 const columns = [
     {
         header:"Materia Nombre", 
@@ -99,6 +100,8 @@ const AsignacionListPage = async ({
                                     nombre: {contains:value, mode:"insensitive"},
                                 },
                             };
+                            break;
+                            default:
                             break;                        
                 }
             }

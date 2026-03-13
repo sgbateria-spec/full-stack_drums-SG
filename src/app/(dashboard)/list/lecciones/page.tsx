@@ -90,6 +90,8 @@ const LeccionListPage = async ({
                                 {materia:{nombre: { contains:value, mode:"insensitive"}}},
                                 {maestro:{nombre: { contains:value, mode:"insensitive"}}},
                             ];
+                            break;
+                            default:
                             break;                        
                 }
             }

@@ -100,6 +100,8 @@ const ExamenListPage = async ({
                                     nombre: {contains:value, mode:"insensitive"},
                                 },
                             };
+                            break;
+                            default:
                             break;                        
                 }
             }

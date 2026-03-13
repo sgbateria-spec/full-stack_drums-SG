@@ -87,6 +87,8 @@ const ClaseListPage = async ({
                         case "search":
                             query.nombre = {contains:value, mode:"insensitive"}    
                              break;
+                             default:
+                             break;
                         
                 }
             }
